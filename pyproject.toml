@@ -1,0 +1,109 @@
+[build-system]
+requires = ["hatchling>=1.20"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mechreward"
+version = "0.1.0"
+description = "Mechanistic interpretability as reward signal for RL training of LLMs"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Caio Vicentino", email = "caiovicentino@users.noreply.github.com" }]
+keywords = ["llm", "rl", "sae", "interpretability", "grpo", "reward"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "torch>=2.1",
+    "transformers>=4.44",
+    "accelerate>=0.33",
+    "numpy>=1.26",
+    "pydantic>=2.5",
+    "requests>=2.31",
+    "huggingface_hub>=0.24",
+    "safetensors>=0.4",
+    "tqdm>=4.66",
+    "datasets>=2.20",
+]
+
+[project.optional-dependencies]
+sae = [
+    "sae-lens>=5.0",
+    "einops>=0.7",
+]
+trl = [
+    "trl>=0.11",
+    "peft>=0.12",
+]
+vllm = [
+    "vllm>=0.6",
+]
+interp = [
+    "transformer-lens>=2.0",
+    "nnsight>=0.4",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.7",
+]
+all = [
+    "mechreward[sae,trl,vllm,interp]",
+]
+
+[project.urls]
+Homepage = "https://github.com/caiovicentino/mechreward"
+Repository = "https://github.com/caiovicentino/mechreward"
+Issues = "https://github.com/caiovicentino/mechreward/issues"
+
+[project.scripts]
+mechreward = "mechreward.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mechreward"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/mechreward",
+    "catalogs",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "C4", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B", "E501"]
+"experiments/*" = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v --tb=short"

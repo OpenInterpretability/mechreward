@@ -1,0 +1,88 @@
+{
+  "name": "gemma-2-9b/reasoning_pack",
+  "version": "0.1.0",
+  "model_name": "google/gemma-2-9b",
+  "release": "gemma-scope-9b-pt-res-canonical",
+  "sae_id": "layer_22/width_16k/canonical",
+  "description": "Candidate features for reasoning behaviors in Gemma-2-9B at layer 22 residual. THESE ARE UNVALIDATED PLACEHOLDERS. Run mechreward.features.validator.validate_feature() on each before trusting them as reward components. The feature IDs are drawn from Neuronpedia's published Gemma Scope descriptions and are meant as a starting point, not a definitive catalog.",
+  "features": [
+    {
+      "feature_id": 6789,
+      "name": "step_by_step_marker",
+      "description": "Activates on 'step 1', 'first', 'let me think' and similar sequential reasoning markers.",
+      "weight": 0.6,
+      "release": "gemma-scope-9b-pt-res-canonical",
+      "sae_id": "layer_22/width_16k/canonical",
+      "activation_threshold": 0.1,
+      "validated": false,
+      "metadata": {
+        "source": "placeholder — validate before use",
+        "suggested_positive_examples": [
+          "Step 1: Let me first identify what's given.",
+          "First, I need to check the assumptions."
+        ],
+        "suggested_negative_examples": [
+          "Paris is the capital of France.",
+          "Yes, the answer is 42."
+        ]
+      }
+    },
+    {
+      "feature_id": 12843,
+      "name": "arithmetic_operation",
+      "description": "Activates during arithmetic calculations and intermediate results.",
+      "weight": 0.4,
+      "release": "gemma-scope-9b-pt-res-canonical",
+      "sae_id": "layer_22/width_16k/canonical",
+      "activation_threshold": 0.1,
+      "validated": false,
+      "metadata": {
+        "source": "placeholder — validate before use"
+      }
+    },
+    {
+      "feature_id": 4521,
+      "name": "confidence_assertion",
+      "description": "Activates on confident factual claims (no hedging).",
+      "weight": 0.3,
+      "release": "gemma-scope-9b-pt-res-canonical",
+      "sae_id": "layer_22/width_16k/canonical",
+      "activation_threshold": 0.1,
+      "validated": false,
+      "metadata": {
+        "source": "placeholder — validate before use"
+      }
+    },
+    {
+      "feature_id": 9876,
+      "name": "hedging_language",
+      "description": "Activates on hedging phrases ('maybe', 'I think', 'perhaps').",
+      "weight": -0.4,
+      "release": "gemma-scope-9b-pt-res-canonical",
+      "sae_id": "layer_22/width_16k/canonical",
+      "activation_threshold": 0.1,
+      "validated": false,
+      "metadata": {
+        "source": "placeholder — validate before use"
+      }
+    },
+    {
+      "feature_id": 11204,
+      "name": "final_answer_marker",
+      "description": "Activates on 'therefore', 'so the answer is', 'final answer'.",
+      "weight": 0.5,
+      "release": "gemma-scope-9b-pt-res-canonical",
+      "sae_id": "layer_22/width_16k/canonical",
+      "activation_threshold": 0.1,
+      "validated": false,
+      "metadata": {
+        "source": "placeholder — validate before use"
+      }
+    }
+  ],
+  "metadata": {
+    "caveat": "Feature IDs here are placeholders to illustrate the pack format. Before any serious run, validate each feature via mechreward.features.validator.validate_feature() with a known set of positive and negative examples. See docs/validating_features.md for the workflow.",
+    "created_at": "2026-04-14",
+    "maintainer": "mechreward contributors"
+  }
+}

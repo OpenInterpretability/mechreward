@@ -1,0 +1,27 @@
+{
+  "name": "gemma-2-9b/retrieval_pack",
+  "version": "0.1.0",
+  "model_name": "google/gemma-2-9b",
+  "release": "gemma-scope-9b-pt-res-canonical",
+  "sae_id": "layer_22/width_16k/canonical",
+  "description": "Features that activate during factual recall. Placeholder IDs.",
+  "features": [
+    {
+      "feature_id": 2817,
+      "name": "fact_retrieval_signal",
+      "description": "General factual recall activation pattern.",
+      "weight": 1.0,
+      "validated": false
+    },
+    {
+      "feature_id": 7431,
+      "name": "named_entity_retrieval",
+      "description": "Named entity lookup.",
+      "weight": 0.5,
+      "validated": false
+    }
+  ],
+  "metadata": {
+    "caveat": "Placeholders. Validate before production use."
+  }
+}

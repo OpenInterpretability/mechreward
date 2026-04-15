@@ -1,0 +1,34 @@
+{
+  "name": "gemma-2-9b/confidence_pack",
+  "version": "0.1.0",
+  "model_name": "google/gemma-2-9b",
+  "release": "gemma-scope-9b-pt-res-canonical",
+  "sae_id": "layer_22/width_16k/canonical",
+  "description": "Features targeting the confidence axis: certain assertion vs hedging vs refusal. Placeholder IDs — validate before use.",
+  "features": [
+    {
+      "feature_id": 4521,
+      "name": "confident_assertion",
+      "description": "Confident declarative tokens.",
+      "weight": 1.0,
+      "validated": false
+    },
+    {
+      "feature_id": 9876,
+      "name": "hedging_language",
+      "description": "Hedging phrases.",
+      "weight": -1.0,
+      "validated": false
+    },
+    {
+      "feature_id": 3311,
+      "name": "refusal_marker",
+      "description": "Refusal phrases ('I cannot', 'I won't').",
+      "weight": -0.3,
+      "validated": false
+    }
+  ],
+  "metadata": {
+    "caveat": "Placeholders. Run feature validation before training."
+  }
+}
