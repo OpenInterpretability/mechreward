@@ -316,9 +316,9 @@ class TrainConfig:
     micro_batch: int = 8               # sequences per model forward
     max_length: int = 512
     warmup_steps: int = 5000           # was 1000 — longer warmup stabilizes features
-    decoder_norm_every: int = 100
+    decoder_norm_every: int = 10       # was 100 — per Gao et al., stabilizes training
     dead_threshold_steps: int = 5000   # was 500 — be more patient before marking dead
-    aux_coef: float = 1.0 / 32.0
+    aux_coef: float = 1.0 / 8.0        # was 1/32 — 4× stronger revival gradient
     buffer_capacity: int = 2_000_000   # was 500_000 — more activation diversity
     init_bdec_from_sample: bool = True # initialize b_dec from geometric median
     bdec_init_sample: int = 16_384     # sample size for b_dec init
@@ -487,6 +487,7 @@ def train(cfg: TrainConfig) -> None:
     print(
         f"[sae] Config: k={sae.k} d_sae={sae.d_sae} lr={cfg.lr} "
         f"warmup={cfg.warmup_steps} dead_thresh={cfg.dead_threshold_steps} "
+        f"aux_coef={cfg.aux_coef:.4f} dec_norm_every={cfg.decoder_norm_every} "
         f"buffer={cfg.buffer_capacity:,}"
     )
 
@@ -644,6 +645,11 @@ def parse_args() -> TrainConfig:
     p.add_argument("--max-length", type=int, default=512)
     p.add_argument("--warmup-steps", type=int, default=5000)
     p.add_argument("--dead-threshold-steps", type=int, default=5000)
+    p.add_argument("--aux-coef", type=float, default=1.0 / 8.0,
+                   help="Weight of the dead-feature revival aux loss. Default 1/8 "
+                        "(was 1/32 originally). Increase if dead% stays >25% at convergence.")
+    p.add_argument("--decoder-norm-every", type=int, default=10,
+                   help="Re-normalize W_dec rows every N steps. Default 10.")
     p.add_argument("--buffer-capacity", type=int, default=2_000_000)
     p.add_argument(
         "--no-bdec-init",
@@ -674,6 +680,8 @@ def parse_args() -> TrainConfig:
         max_length=args.max_length,
         warmup_steps=args.warmup_steps,
         dead_threshold_steps=args.dead_threshold_steps,
+        aux_coef=args.aux_coef,
+        decoder_norm_every=args.decoder_norm_every,
         buffer_capacity=args.buffer_capacity,
         init_bdec_from_sample=not args.no_bdec_init,
         dataset=args.dataset,
