@@ -1,0 +1,28 @@
+{
+  "name": "gemma-4-e4b/reasoning_pack",
+  "version": "0.1.0",
+  "model_name": "google/gemma-4-e4b",
+  "release": "caiovicentino1/Gemma-4-E4B-SAE-L21-topk",
+  "sae_id": "layer_21",
+  "description": "Placeholder reasoning features for Gemma 4 E4B at residual stream layer 21. Contrastive discovery pending Stage Gate 1 correlation test. Layer mapping shows peak contrastive effect at L27/42 (64% depth), not L21. Logit lens reveals English commitment at L30+ — hybrid MoE commits to language 15 layers later than Qwen3.5 GDN.",
+  "helpful_features": [],
+  "harmful_features": [],
+  "validation": {
+    "method": "pending — Stage Gate 1 not yet run on Gemma",
+    "notes": "CAA at L27 produced null aggregate (0pp for +10 scale, negative control at +2pp). Direction at L27 does not encode 'correctness direction' cleanly. Contrastive features via SAE at L21 not yet extracted for held-out correlation test."
+  },
+  "metadata": {
+    "architecture": "gemma4_ensemble_moe",
+    "d_model": 2560,
+    "d_sae": 32768,
+    "k": 128,
+    "num_hidden_layers": 42,
+    "target_layer": 21,
+    "peak_contrastive_layer": 27,
+    "english_commitment_layer": 30,
+    "training_tokens": 1000000000,
+    "var_exp": 0.939,
+    "baseline_gsm8k": 0.50,
+    "hf_sae_repo": "caiovicentino1/Gemma-4-E4B-SAE-L21-topk"
+  }
+}

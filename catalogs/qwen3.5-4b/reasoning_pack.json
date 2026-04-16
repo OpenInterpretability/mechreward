@@ -1,33 +1,55 @@
 {
   "name": "qwen3.5-4b/reasoning_pack",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "model_name": "Qwen/Qwen3.5-4B",
-  "release": "mechreward/qwen3.5-4b-topk",
+  "release": "caiovicentino1/Qwen3.5-4B-SAE-L18-topk",
   "sae_id": "layer_18",
-  "description": "Candidate reasoning features for Qwen3.5-4B at residual stream layer 18. The SAE is trained by scripts/train_sae_qwen35.py — the first public SAE for the Qwen3.5 architecture. Features here are PLACEHOLDERS until the training run completes and auto-interp + validator produces real labels. Run mechreward.features.validator.validate_feature() against every entry before using this pack in a training run.",
-  "features": [
-    {
-      "feature_id": 0,
-      "name": "placeholder_until_trained",
-      "description": "Placeholder entry. Will be replaced by real features after the SAE training run completes. See scripts/train_sae_qwen35.py and notebooks/train_qwen35_4b_sae.ipynb.",
-      "weight": 0.0,
-      "release": "mechreward/qwen3.5-4b-topk",
-      "sae_id": "layer_18",
-      "activation_threshold": 0.0,
-      "validated": false,
-      "metadata": {
-        "status": "awaiting_training",
-        "next_action": "Run train_sae_qwen35.py with --tokens 200000000 and re-run auto-interp."
-      }
-    }
+  "description": "Contrastive reasoning features for Qwen3.5-4B at residual stream layer 18. Discovered via contrastive correctness analysis on 50 held-out GSM8K responses (mean_correct − mean_wrong per feature). Validated by Stage Gate 1 correlation test: Spearman ρ=0.540 (p<0.0001) on 100 held-out GSM8K questions. These features predict whether the model will answer a math question correctly, and are intended for use as a dense reward signal in RL fine-tuning (mechreward thesis).",
+  "helpful_features": [
+    {"feature_id": 36405, "effect_size": 2.158, "mean_correct": 0.0028, "mean_wrong": 0.0000, "weight": 1.0, "validated": true},
+    {"feature_id": 27873, "effect_size": 2.142, "mean_correct": 0.0012, "mean_wrong": 0.0000, "weight": 1.0, "validated": true},
+    {"feature_id": 35818, "effect_size": 2.130, "mean_correct": 0.0014, "mean_wrong": 0.0000, "weight": 1.0, "validated": true},
+    {"feature_id": 12399, "effect_size": 2.111, "mean_correct": 0.0014, "mean_wrong": 0.0000, "weight": 1.0, "validated": true},
+    {"feature_id": 2643,  "effect_size": 2.110, "mean_correct": 0.0010, "mean_wrong": 0.0000, "weight": 1.0, "validated": true},
+    {"feature_id": 6998,  "effect_size": 2.084, "mean_correct": 0.0272, "mean_wrong": 0.0044, "weight": 1.0, "validated": true},
+    {"feature_id": 15360, "effect_size": 2.083, "mean_correct": 0.0053, "mean_wrong": 0.0005, "weight": 1.0, "validated": true},
+    {"feature_id": 25868, "effect_size": 2.080, "mean_correct": 0.0027, "mean_wrong": 0.0001, "weight": 1.0, "validated": true},
+    {"feature_id": 21154, "effect_size": 2.067, "mean_correct": 0.0024, "mean_wrong": 0.0001, "weight": 1.0, "validated": true},
+    {"feature_id": 35842, "effect_size": 2.060, "mean_correct": 0.0560, "mean_wrong": 0.0075, "weight": 1.0, "validated": true}
   ],
+  "harmful_features": [
+    {"feature_id": 18654, "effect_size": -2.469, "mean_correct": 0.0001, "mean_wrong": 0.0037, "weight": -1.0, "validated": true},
+    {"feature_id": 36412, "effect_size": -2.237, "mean_correct": 0.0000, "mean_wrong": 0.0005, "weight": -1.0, "validated": true},
+    {"feature_id": 15686, "effect_size": -2.195, "mean_correct": 0.0001, "mean_wrong": 0.0017, "weight": -1.0, "validated": true},
+    {"feature_id": 23272, "effect_size": -2.123, "mean_correct": 0.0015, "mean_wrong": 0.0067, "weight": -1.0, "validated": true},
+    {"feature_id": 13672, "effect_size": -2.111, "mean_correct": 0.0000, "mean_wrong": 0.0004, "weight": -1.0, "validated": true},
+    {"feature_id": 14912, "effect_size": -2.110, "mean_correct": 0.0017, "mean_wrong": 0.0110, "weight": -1.0, "validated": true},
+    {"feature_id": 5863,  "effect_size": -2.108, "mean_correct": 0.0001, "mean_wrong": 0.0020, "weight": -1.0, "validated": true},
+    {"feature_id": 29516, "effect_size": -2.082, "mean_correct": 0.0000, "mean_wrong": 0.0003, "weight": -1.0, "validated": true},
+    {"feature_id": 30690, "effect_size": -2.071, "mean_correct": 0.0000, "mean_wrong": 0.0029, "weight": -1.0, "validated": true},
+    {"feature_id": 40589, "effect_size": -2.064, "mean_correct": 0.0000, "mean_wrong": 0.0004, "weight": -1.0, "validated": true}
+  ],
+  "validation": {
+    "method": "Stage Gate 1 — passive correlation pre-test",
+    "date": "2026-04-16",
+    "n_questions": 100,
+    "n_correct": 89,
+    "spearman_rho": 0.540,
+    "spearman_p": 0.0000,
+    "pearson_r": 0.726,
+    "reward_formula": "R_mech = sum(helpful_activations) - sum(harmful_activations) per response, mean-pooled over tokens at L18",
+    "pass_threshold": 0.30,
+    "verdict": "PASS"
+  },
   "metadata": {
-    "architecture": "qwen3_5",
+    "architecture": "qwen3_5_gdn",
     "d_model": 2560,
+    "d_sae": 40960,
+    "k": 128,
     "num_hidden_layers": 32,
     "target_layer": 18,
-    "training_recipe": "TopK SAE, k=64, d_sae=40960, 200M tokens from FineWeb-Edu",
-    "status": "awaiting_training_run",
-    "contact": "https://github.com/caiovicentino/mechreward"
+    "peak_contrastive_layer": 13,
+    "training_tokens": 200000000,
+    "hf_sae_repo": "caiovicentino1/Qwen3.5-4B-SAE-L18-topk"
   }
 }
