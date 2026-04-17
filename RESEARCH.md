@@ -128,6 +128,15 @@ Scaled-up GRPO on 7500 GSM8K train questions with **per-token mech-reward** (key
 
 **All G3 success criteria met**: C1 (capability preserved), C2-extended (≥ 80 % GSM8K), anti-Goodhart (hack rate << 30 %). We chose to stop Phase A at step 400 instead of continuing to 2000 because the target was already achieved with margin.
 
+**Effective training budget**: the first 232 steps ran at the G2-documented
+`LR=1e-6` and produced **zero lift** (`quick_gsm8k@200=64 %` = baseline).
+Only after raising LR to 3e-6 at step 232 did training move. So the budget
+that actually broke the ceiling was **168 steps at LR=3e-6**, roughly
+**1.68× G2 R1's 100-step budget** for a **+7 pp gain** — not the nominal
+"400 steps" figure. This makes the per-token mech-reward contribution
+quantitatively cleaner: same features + same SAE + 1.68× the effective
+compute = +7 pp over trajectory-level G2 R1.
+
 ### Cross-architecture observations
 
 | Finding | Qwen3.5-4B (GDN) | Gemma 4 E4B (MoE) |
