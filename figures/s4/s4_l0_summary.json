@@ -1,0 +1,43 @@
+{
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "timestamp": "2026-04-17 20:15:54",
+  "probe": {
+    "n_questions": 100,
+    "difficulty": ["easy", "middle"],
+    "baseline_accuracy": 0.42,
+    "n_correct": 42,
+    "n_wrong": 58,
+    "avg_tokens_generated": 2702.27
+  },
+  "layer_analysis": {
+    "peak_layer": 22,
+    "peak_is_gated_attn": false,
+    "peak_depth_pct": 55.0,
+    "peak_top10_d_sum": 12.08,
+    "min_top10_d_sum": 9.49,
+    "spread_pct": 27.3,
+    "plateau_layers_high": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 34, 37],
+    "gated_attn_not_special": true
+  },
+  "logit_lens": {
+    "reasoning_tokens": ["####", "boxed", "answer", "Answer", "Step", "Therefore", "So"],
+    "commit_layer": 39,
+    "commit_depth_pct": 97.5,
+    "gap_peak_to_commit_layers": 17
+  },
+  "decision": {
+    "sae_target_layer": 23,
+    "reason": "peak L22 (GDN) is the contrastive hotspot; L23 (Gated Attn) is the downstream consolidation layer. Training SAE at L23 follows the Qwen3.5 pattern (peak L13 → SAE L18) and captures both signals."
+  },
+  "cross_architecture_comparison": {
+    "qwen3.5-4b_dense_gdn": {"peak": 13, "depth_pct": 41, "commit_layer": 15, "gap_layers": 2},
+    "qwen3.6-35b-a3b_hybrid_moe_gdn_ga": {"peak": 22, "depth_pct": 55, "commit_layer": 39, "gap_layers": 17},
+    "gemma4-e4b_moe": {"peak": 27, "depth_pct": 64, "commit_layer": 30, "gap_layers": 3}
+  },
+  "key_observations": [
+    "Qwen3.6 peak L22 sits between Qwen3.5-4B (L13) and Gemma4-E4B (L27) in relative depth (55%)",
+    "Qwen3.6 has unusually large peak-to-commit gap (17 layers) — MoE + thinking mode pushes final token prediction to near-last layer",
+    "Gated Attention layers are NOT Cohen's-d hotspots in Qwen3.6 — contra our prior hypothesis that GA bottlenecks would concentrate signal",
+    "Clean peak at L22 with 27% spread between min/max layer (vs 9% in v1 with truncated responses) — v2 reduced truncation is a viable protocol for hybrid models"
+  ]
+}
