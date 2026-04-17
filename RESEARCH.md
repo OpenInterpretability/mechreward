@@ -73,7 +73,7 @@ Success criteria (from lowest bar to highest):
 
 If **none** of these hold, we write a paper titled "Why mechanistic features fail as RL rewards for reasoning", publish the negative result, and save the community the effort.
 
-## Empirical results (2026-04-15 – 2026-04-16)
+## Empirical results (2026-04-15 – 2026-04-17)
 
 ### Stage Gate 1 — correlation pre-test (PASSED)
 
@@ -101,6 +101,32 @@ GRPO on 500 GSM8K train questions, 100 steps, 4 rollouts/question, LR=1e-6, KL p
 **Key finding**: R1 reached 74 % at step 40; R0 needed all 100 steps → **2.5× faster convergence**. R0 dropped from its peak (76 % → 74 %) while R1 held stable (75 % → 76 %), suggesting SAE features act as a late-training regularizer.
 
 **R2 (raw direction) is actively harmful** at step 20 (−3 pp from baseline), while R1 was at +6 pp. The 9 pp gap validates that **SAE decomposition is the necessary processing step** — the raw direction carries polysemantic noise that misleads GRPO, while the sparse feature selection filters it into a clean reward signal.
+
+### Stage Gate 3 — Phase A full RL (PASSED on C2 extended, ceiling broken)
+
+Scaled-up GRPO on 7500 GSM8K train questions with **per-token mech-reward** (key G3 innovation over G2 trajectory-level). Qwen3.5-4B + LoRA r=32, raw prompt `Q:/A:`, 4 rollouts × 4 questions per step, λ=0.1, KL β=0.05.
+
+**Critical debugging note**: `LR=1e-6` (the value documented for G2) stalled at step 200 with `quick_gsm8k=64%` (same as baseline). The bottleneck was NOT gradient clipping — `gnorm` was always <0.5 throughout, so `clip_grad_norm_=1.0` never triggered. Raising LR to 3e-6 at step 232 immediately produced learning: KL jumped 0.018 → 0.10, mech signal reversed from −0.02 → +0.58 in ~100 steps. **Lesson**: verify `gnorm` and `KL` are rising before attributing stalled training to clipping or algorithm choice.
+
+**Step 400 full eval** (vs baseline with LoRA disabled via `model.disable_adapter()`):
+
+| Metric | Baseline | Trained @ step 400 | Δ | Verdict |
+|---|---|---|---|---|
+| GSM8K (500Q greedy) | 64 % | **83.00 %** | **+19 pp** | **✅ Breaks G2 R1 ceiling (76 %) by +7 pp** |
+| MMLU (200Q raw zeroshot) | 50.00 % | 54.50 % | +4.50 pp | ✅ No regression, slight gain |
+| MATH-500 (500Q greedy) | — | 18.20 % | — | Transfer (not trained on) |
+| Hack rate (canaries n=50) | 4.0 % (2/50) | 8.0 % (4/50) | +4 pp | ✅ Within 95 % CI (≤ 30 % threshold) |
+| Correct under canary (n=50) | 18.0 % | 28.0 % | **+10 pp** | Policy more resilient to adversarial framing |
+| Ambiguous (n=50) | 78.0 % | 64.0 % | −14 pp | Policy more decisive |
+
+**Training signal trajectory** (post-patch, step 232 → 400):
+- `mech` per-rollout: −0.02 (step 200) → +0.076 (250) → +0.382 (270) → +0.58 peak (330) → plateau ~+0.4-0.5
+- KL: 0.018 → 0.108 (meaningful adapter movement)
+- Training outcome (temp 0.9): 0.55 → 0.75 average
+
+**Artifacts**: trained LoRA at `caiovicentino1/Qwen3.5-4B-mechreward-G3-phaseA-step400` (HF). Training notebook `notebooks/stage3_qwen35_4b_rl_v2.ipynb`.
+
+**All G3 success criteria met**: C1 (capability preserved), C2-extended (≥ 80 % GSM8K), anti-Goodhart (hack rate << 30 %). We chose to stop Phase A at step 400 instead of continuing to 2000 because the target was already achieved with margin.
 
 ### Cross-architecture observations
 
