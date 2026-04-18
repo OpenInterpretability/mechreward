@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-04-18 17:29:43",
+  "model": "Qwen/Qwen3.6-35B-A3B",
+  "sae_ckpt": "sae_step_22674_92M_tokens.pt",
+  "sae_layer": 23,
+  "discovery": {
+    "n": 50,
+    "n_correct": 22,
+    "n_wrong": 28,
+    "baseline_accuracy": 0.44
+  },
+  "validation": {
+    "n": 100,
+    "n_correct": 43,
+    "baseline_accuracy": 0.43,
+    "spearman_rho": 0.5216609536773463,
+    "spearman_p": 2.615316302867932e-08,
+    "pearson_r": 0.5371751432293358,
+    "pearson_p": 8.314512237832042e-09
+  },
+  "decision": {
+    "verdict": "PASS-EXCELLENT",
+    "pass_threshold": 0.3,
+    "next_action": "Proceed to S4-G2 (tiny RL sanity)"
+  },
+  "helpful_ids": [
+    6758,
+    6676,
+    13307,
+    15920,
+    22090,
+    32515,
+    27560,
+    6367,
+    13238,
+    18737
+  ],
+  "harmful_ids": [
+    3030,
+    19458,
+    14581,
+    15828,
+    14307,
+    14756,
+    14921,
+    20338,
+    8062,
+    7364
+  ]
+}

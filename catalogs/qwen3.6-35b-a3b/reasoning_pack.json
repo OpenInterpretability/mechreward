@@ -1,0 +1,205 @@
+{
+  "name": "qwen3.6-35b-a3b/reasoning_pack",
+  "version": "0.1.0",
+  "model_name": "Qwen/Qwen3.6-35B-A3B",
+  "release": "caiovicentino1/Qwen3.6-35B-A3B-SAE-L23-topk",
+  "sae_id": "layer_23",
+  "description": "Contrastive reasoning features for Qwen3.6-35B-A3B at residual stream layer 23. Discovered via contrastive correctness analysis on 50 held-out SuperGPQA responses (thinking mode, (easy+middle) difficulty filter). Validated by Stage Gate 1 correlation test: Spearman \u03c1=0.522 (p=2.62e-08) on 100 held-out SuperGPQA questions (disjoint from discovery and from S4-L0 probe set). These features predict whether the model will answer a science/reasoning question correctly, and are intended for use as a dense reward signal in RL fine-tuning (mechreward thesis).",
+  "helpful_features": [
+    {
+      "feature_id": 6758,
+      "effect_size": 1.8436416387557983,
+      "mean_correct": 0.009877401404082775,
+      "mean_wrong": 0.001986072864383459,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 6676,
+      "effect_size": 1.828618049621582,
+      "mean_correct": 0.0009717749198898673,
+      "mean_wrong": 0.00021158671006560326,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 13307,
+      "effect_size": 1.8219799995422363,
+      "mean_correct": 0.01269158348441124,
+      "mean_wrong": 0.004615373443812132,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 15920,
+      "effect_size": 1.7709283828735352,
+      "mean_correct": 0.004557009320706129,
+      "mean_wrong": 0.0017189636128023267,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 22090,
+      "effect_size": 1.762451171875,
+      "mean_correct": 0.006175841670483351,
+      "mean_wrong": 0.002678839024156332,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 32515,
+      "effect_size": 1.7527166604995728,
+      "mean_correct": 0.028715036809444427,
+      "mean_wrong": 0.00518393749371171,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 27560,
+      "effect_size": 1.7272032499313354,
+      "mean_correct": 0.005384931806474924,
+      "mean_wrong": 0.0018494090763852,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 6367,
+      "effect_size": 1.7258739471435547,
+      "mean_correct": 0.006661276798695326,
+      "mean_wrong": 0.002828938653692603,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 13238,
+      "effect_size": 1.7243659496307373,
+      "mean_correct": 0.0013137477217242122,
+      "mean_wrong": 0.00047967908903956413,
+      "weight": 1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 18737,
+      "effect_size": 1.7187318801879883,
+      "mean_correct": 0.0019582619424909353,
+      "mean_wrong": 0.0008316836319863796,
+      "weight": 1.0,
+      "validated": true
+    }
+  ],
+  "harmful_features": [
+    {
+      "feature_id": 3030,
+      "effect_size": -1.7252421379089355,
+      "mean_correct": 0.0017968836473301053,
+      "mean_wrong": 0.0038920212537050247,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 19458,
+      "effect_size": -1.492784857749939,
+      "mean_correct": 0.00039666201337240636,
+      "mean_wrong": 0.001108339405618608,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 14581,
+      "effect_size": -1.4852631092071533,
+      "mean_correct": 0.02237800508737564,
+      "mean_wrong": 0.03642994910478592,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 15828,
+      "effect_size": -1.469602108001709,
+      "mean_correct": 0.001309845014475286,
+      "mean_wrong": 0.002316618338227272,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 14307,
+      "effect_size": -1.4646748304367065,
+      "mean_correct": 0.0033053667284548283,
+      "mean_wrong": 0.005367265082895756,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 14756,
+      "effect_size": -1.4199340343475342,
+      "mean_correct": 0.0005383932148106396,
+      "mean_wrong": 0.0008143536979332566,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 14921,
+      "effect_size": -1.3796244859695435,
+      "mean_correct": 0.0003397612599655986,
+      "mean_wrong": 0.001282036304473877,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 20338,
+      "effect_size": -1.37888765335083,
+      "mean_correct": 0.001937446417286992,
+      "mean_wrong": 0.006493094842880964,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 8062,
+      "effect_size": -1.3732417821884155,
+      "mean_correct": 0.00014946010196581483,
+      "mean_wrong": 0.0004790581588167697,
+      "weight": -1.0,
+      "validated": true
+    },
+    {
+      "feature_id": 7364,
+      "effect_size": -1.357985258102417,
+      "mean_correct": 0.00018441396241541952,
+      "mean_wrong": 0.0005433211917988956,
+      "weight": -1.0,
+      "validated": true
+    }
+  ],
+  "validation": {
+    "method": "Stage Gate 1 \u2014 passive correlation pre-test",
+    "date": "2026-04-18",
+    "benchmark": "SuperGPQA",
+    "difficulty_filter": [
+      "easy",
+      "middle"
+    ],
+    "discovery_n": 50,
+    "discovery_split": "[100:150]",
+    "n_questions": 100,
+    "validation_split": "[150:250]",
+    "n_correct": 43,
+    "spearman_rho": 0.5216609536773463,
+    "spearman_p": 2.615316302867932e-08,
+    "pearson_r": 0.5371751432293358,
+    "pearson_p": 8.314512237832042e-09,
+    "reward_formula": "R_mech = sum(helpful_activations) - sum(harmful_activations) per response, mean-pooled over tokens at L23",
+    "pass_threshold": 0.3,
+    "verdict": "PASS-EXCELLENT",
+    "sae_checkpoint": "sae_step_22674_92M_tokens.pt"
+  },
+  "metadata": {
+    "architecture": "qwen3_5_moe_triple_hybrid",
+    "d_model": 2048,
+    "d_sae": 32768,
+    "k": 128,
+    "num_hidden_layers": 40,
+    "target_layer": 23,
+    "peak_contrastive_layer": 22,
+    "training_tokens": null,
+    "hf_sae_repo": "caiovicentino1/Qwen3.6-35B-A3B-SAE-L23-topk"
+  }
+}
