@@ -1,0 +1,7 @@
+# See [README.md](./README.md)
+
+The canonical URL is <https://github.com/caiovicentino/mechreward/blob/main/README.md> (no trailing period).
+
+This file (`README.md.` with trailing period) exists only because the LessWrong post at [yW28sjQ2pwfTkoSF8](https://www.lesswrong.com/posts/yW28sjQ2pwfTkoSF8/mechanistic-interpretability-as-reward-signal-for-rl) accidentally included the sentence period inside the hyperlink, producing a URL ending in `.md.`. Rather than patch the submitted post, this redirect catches the broken link and sends you to the right place.
+
+➡️ **See [README.md](./README.md) for the full documentation.**
