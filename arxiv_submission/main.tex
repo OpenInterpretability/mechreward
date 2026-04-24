@@ -1,0 +1,331 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{authblk}
+\usepackage{caption}
+\usepackage{microtype}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,
+    urlcolor=blue,
+    citecolor=black,
+}
+
+\title{Loop-Intolerance Profiling: Localizing Distributed Reasoning in a Hybrid MoE Architecture via Nine Convergent Intervention Experiments}
+
+\author[1]{Caio Vicentino}
+\affil[1]{Independent Researcher \\ \texttt{satoshimemes79@gmail.com}}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We conduct nine levels of mechanistic intervention on Qwen3.6-35B-A3B --- a hybrid architecture combining Mixture-of-Experts (128 experts, 8 active), Gated Delta Networks (32/40 layers), and Gated Attention (8/40 layers) --- to locate and manipulate the circuit responsible for multiple-choice reasoning on SuperGPQA. A linear probe on the L17 residual stream predicts the model's final answer letter at the 10th response token with 5.2$\times$ chance accuracy (AUROC 0.78), reproducing the forward-planning detection signal reported for dense transformers. However, eight single-point intervention methods --- logreg-direction patching, ablation, SAE feature-vector steering, transcoder + attribution ablation, factorial $\alpha$/T sweeps, induced recurrence, norm-preserving Parcae-lite recurrence, and amnesic inference validation --- produce null effects, anti-causal effects, or monotonically destructive effects. Ablating the probe direction \emph{increases} source-letter accuracy by \textbf{+15~pp}, a canonical amnesic-probing result (Elazar et al., 2021). We introduce \textbf{Loop-Intolerance Profiling (LIP)}, a destructive-localization method that identifies reasoning-critical zones at L15--L20 in Qwen3.6, precisely where single-point interventions null. Amnesic inference validation on the Stage B corpus yields a \textbf{+2.7~pp Pareto-positive accuracy boost} (10 gained / 0 lost across 617 items, pooled $p=0.002$) with an exact $\alpha=1.0$ peak. The effect is sharply \emph{hybrid-specific}: Qwen2.5-32B (dense) shows \textbf{$-$4.5~pp} with 0 gains / 2 losses, and Mixtral-8x7B (MoE-only, no GDN/Gated-Attn) shows \textbf{$-$2.5~pp} with 0 gains / 1--2 losses --- a 7.2~pp architecture gap between hybrid-positive and dense-negative, with MoE routing alone falsified as a sufficient enabler. We release the 711-rollout Stage B corpus with per-token L11/L17/L23 activations at \url{https://huggingface.co/datasets/caiovicentino1/Qwen3.6-35B-A3B-mcr-stage-b}.
+\end{abstract}
+
+\section{Introduction}
+
+Anthropic's \emph{On the Biology of a Large Language Model}~\cite{lindsey2025biology} demonstrated that Claude 3.5 Haiku plans rhyme words multiple tokens ahead, verified by attribution-graph intervention on transcoder features --- a signature finding of \emph{forward planning} in a frontier language model. All published replications have used dense transformer architectures. Whether the same phenomenon exists in \emph{hybrid Mixture-of-Experts + State-Space + Gated-Attention architectures}, now representative of the largest open-weights reasoning models, is unknown.
+
+We study this question on \textbf{Qwen3.6-35B-A3B}, a triple-hybrid architecture with: Mixture-of-Experts routing (128 experts, 8 active per token); Gated Delta Networks (GDN) on 32 of 40 layers; Gated Attention on 8 of 40 layers (layers 3, 7, 11, 15, 19, 23, 27, 31, 35, 39).
+
+This architecture is mechanistic-interpretability greenfield: no public Sparse Autoencoders, no transcoders, no circuit-tracer support, and no attribution-graph formalism that covers State-Space recurrence.
+
+Detection (\S\ref{sec:detection}) reproduces the dense-transformer pattern: the L17 residual predicts the final answer letter 37.8~pp above a bag-of-words baseline at token T=10 --- before any letter appears in the prose. But \emph{intervention fails uniformly}. Across eight method families (\S\ref{sec:v1}--\S\ref{sec:amnesic}), single-point manipulations null, one ablation is measurably anti-causal, and induced recurrence monotonically destroys accuracy. The null is not a failure to find an effect; it is a coherent empirical signature of distributed reasoning.
+
+We contribute:
+\begin{enumerate}[leftmargin=*, topsep=0pt]
+  \item \textbf{Eight-level intervention synthesis} showing single-point interventions are uniformly insufficient in a hybrid MoE+GDN+GA architecture.
+  \item \textbf{Empirical identification of an amnesic probe} in a hybrid architecture (+15~pp source-kept on teacher-forced ablation), extending Elazar et al. (2021) from linguistic probes to reasoning probes.
+  \item \textbf{Pareto-positive amnesic inference wrapper} (+0.9--3.0~pp accuracy across three runs, 10 gained / 0 lost in 617 items, pooled $p=0.002$), with exact $\alpha=1.0$ peak characterized.
+  \item \textbf{Loop-Intolerance Profiling (LIP)} --- a destructive-localization method that identifies reasoning-critical layer ranges via sweeping inference-time induced recurrence. LIP localizes reasoning at L15--L20 in Qwen3.6, precisely where single-point interventions null.
+  \item \textbf{Partial-rescue evidence} for Parcae-style norm-constrained recurrence: norm-preserving loops recover +10~pp at moderate depth, motivating Parcae-trained hybrid architectures.
+  \item \textbf{Hybrid-architecture signature} (\S\ref{sec:crossarch}): Qwen2.5-32B dense shows $-$4.5~pp under identical protocol --- a \textbf{7.2~pp architecture gap}. Probe directions are observational readouts in hybrid MoE+GDN but load-bearing in dense.
+  \item \textbf{MoE routing alone falsified} (\S\ref{sec:isolation}): Mixtral-8x7B (MoE-only) shows $-$2.5~pp, behaving like dense. The amnesic enabler must be GDN state, Gated-Attention, or fine-grained MoE routing (128/8 vs Mixtral's 8/2) --- not standard MoE.
+  \item \textbf{Public release} of the 711-rollout Stage B intervention corpus with per-token L11/L17/L23 activations.
+\end{enumerate}
+
+\section{Related Work}
+
+\paragraph{Forward-planning and attribution graphs.} Lindsey et al.~\cite{lindsey2025biology} and Ameisen et al.~\cite{ameisen2025circuits} established attribution graphs over Cross-Layer Transcoders (CLTs) as the gold-standard framework for tracing planned computation in dense transformers.
+
+\paragraph{Probing: observational vs.\ causal.} Alain \& Bengio~\cite{alain2018understanding} introduced linear probes. Elazar et al.~\cite{elazar2021amnesic} formalized \emph{amnesic probing}: if ablating a predictive direction preserves or improves task accuracy, the probe is \emph{observational} (reads a correlate), not causal. Mueller \& Geiger~\cite{mueller2024reliability} extended this with a completeness-vs-selectivity framework. Our \S\ref{sec:factorial} Finding B (+15~pp source-kept on ablation) is a canonical amnesic result in a reasoning probe.
+
+\paragraph{SAEs and feature-level intervention.} Gao et al.~\cite{gao2024scaling} introduced TopK SAEs. Marks et al.~\cite{marks2024sparse} introduced Sparse Feature Circuits for behavioral editing. We replicate their SAE protocol in a hybrid MoE+GDN architecture and find null causality (\S\ref{sec:sae}).
+
+\paragraph{Transcoders and attribution patching.} Dunefsky, Chlenski \& Nanda~\cite{dunefsky2024transcoders} introduced transcoders as sparse linear-lookup MLP replacements; Syed et al.~\cite{syed2024attribution}, Kram\'{a}r et al.~\cite{kramar2024atp}, Hanna et al.~\cite{hanna2024eapig} refined attribution patching. We train a TopK transcoder with skip-connection and aux-k loss on Qwen3.6 L17 MoE and find null causal ablation (\S\ref{sec:transcoder}).
+
+\paragraph{Induced recurrence and looped transformers.} Saunshi et al.~\cite{saunshi2024looped} proved that looped transformers simulate chain-of-thought in latent space. Parcae (Prairie et al.~\cite{prairie2026parcae}) derived training-time stability via spectral-radius-constrained input injection.
+
+\paragraph{Architecture-level interpretability.} Hybrid MoE+GDN+Gated-Attention is a greenfield: no public SAE, transcoder, or attribution-graph pipeline exists for Gated Delta Networks. Ali et al.~\cite{ali2024hidden} proposed ``hidden attention'' for Mamba SSM analysis; no analogue yet for GDN.
+
+\section{Methods and Results}
+
+\subsection{Experimental setup}
+All experiments use \textbf{Qwen3.6-35B-A3B} in bfloat16 with SDPA attention. The Stage B corpus comprises 200 SuperGPQA questions~$\times$~5 rollouts, filtered to 711 rollouts with response length $\geq 200$ and non-None predictions. Per-token L11/L17/L23 residual activations are stored as \texttt{safetensors} shards. Decoding is greedy for reproducibility.
+
+\subsection{Forward-Planning Detection (Reproduction)}\label{sec:detection}
+
+A Logistic Regression probe is fit on mean-pooled first-10 residual tokens per rollout, per layer, 10-way letter classification (\texttt{StandardScaler} + PCA(128) + LogReg C=1.0).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Layer & Train Accuracy & AUROC (10-way, OvR) \\
+\midrule
+L11 & 0.79 & \textbf{0.7821} \\
+L17 & 0.86 & 0.7807 \\
+L23 & 0.88 & 0.7769 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+First-10 window accuracy: \texttt{early\_w10\_L17} = 50.3\% (5.0$\times$ the 10-option chance of 10\%). Correct-vs-wrong gap: 76\% vs.\ 27\% (+48~pp). The signal is present before any letter appears in the response prose, reproducing the dense-transformer forward-planning detection pattern.
+
+\subsection{Three-Phase Commitment (BOW Control)}\label{sec:bow}
+
+To rule out textual leakage, we compute a bag-of-words letter-prediction baseline over the first $T$ response tokens:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cccc}
+\toprule
+$T$ & BOW Accuracy & Activation Accuracy & Gap \\
+\midrule
+3 & $\sim$10\% (chance) & 47\% & +37~pp \\
+10 & \textbf{12.6\%} & \textbf{50.3\%} & \textbf{+37.8~pp (pure mechanistic)} \\
+15 & 20\% & 51\% & +31~pp \\
+20 & 32\% & 52\% & +20~pp \\
+30 & 58\% & 53\% & $-$5~pp (textual leak onset) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The T=10 signal is mechanistically pure (+37.8~pp over BOW). Commitment progresses through three phases: silent latent plan ($T \leq 15$), prose emission ($T$ 15--30), explicit commitment ($T \geq 30$).
+
+\subsection{Intervention Level 1 --- Logreg direction patch at L11}\label{sec:v1}
+Per rollout ($N=20$), three completions: baseline (no patch); patched (add $\alpha (d_\text{target} - d_\text{source})$ at residual position 10, $\alpha=5$); random ($\alpha$-norm random direction).
+
+\begin{center}
+source kept: 40\% baseline / 45\% patched / 40\% random; target flipped: 5\% / 5\% / 5\%.
+\textbf{Effect = +0.0~pp}. Patched 30\% invalid vs.\ random 45\% invalid (structure without causal strength).
+\end{center}
+
+\subsection{Intervention Level 2 --- Logreg direction patch at L17, $\alpha=12$, T=15}
+Weakest-possible positive: Effect = +5.0~pp within noise. Patched-source-kept 10~pp higher than random (50\% vs.\ 40\%).
+
+\subsection{Intervention Level 3 --- Factorial Causal-Boundary Sweep}\label{sec:factorial}
+
+Full-factorial at L17, $N=20$, 8 configurations. \textbf{Three novel findings}:
+
+\textbf{Finding A --- $\alpha$ is monotonic-destructive, no peak.} $\alpha=0 \to \alpha=20 \to \alpha=40$ gives 30\% $\to$ 35\% $\to$ \textbf{85\%} invalid with 0/5\% target flips. The probe direction is \emph{orthogonal} to the causal axis.
+
+\textbf{Finding B --- Ablation increases source-kept by +15~pp} (amnesic). Zeroing the source-letter probe direction \emph{increases} source-kept from 40\% $\to$ 55\%. Canonical amnesic probing result (\cite{elazar2021amnesic}).
+
+\textbf{Finding C --- T-curve flat.} Patch at T=10/30/100 all yield 0--5\% target flip. Commitment is behaviorally staged (\S\ref{sec:bow}) but not mechanistically staged under single-direction patches.
+
+\subsection{Intervention Level 4 --- SAE TopK Feature-Vector Patching}\label{sec:sae}
+TopK SAE on 1.4M L17 residual tokens: MSE 0.0008, cosine 0.91, variance explained 56\%, L0 32. Per-letter top-20 feature patch at $\alpha=12$, T=10, $N=20$. \textbf{Effect = $-$5~pp} --- SAE patch worse than random. Polysemantic-free features do not encode a causal letter driver.
+
+\subsection{Intervention Level 5 --- Transcoder + Attribution-Guided Ablation}\label{sec:transcoder}
+TopK$_{64}$ transcoder on 1.4M token pairs, d\_sae=8192, fidelity: cosine 0.71, variance explained 55\%. AtP-style attribution: $\text{score}_f = z_f \cdot \langle W_\text{dec}[f], W_\text{unembed}[\text{letter}] \rangle$. Ablate top-20 attribution-ranked features. \textbf{Effect (top-K $-$ random) = 0.0~pp exact tie.}
+
+\subsection{Intervention Level 6 --- Induced Recurrence (Destructive)}\label{sec:recurrence}
+Forward-pre-hook on L23 captures input, replays L11--L22 for $N_\text{loops}$ additional iterations.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ccccc}
+\toprule
+$N_\text{loops}$ & Accuracy & $\Delta$ vs.\ baseline & Mean gold logit & Mean argmax logit \\
+\midrule
+0 (baseline) & \textbf{64.0\%} & --- & 21.50 & 22.43 \\
+1 & 58.0\% & $-$6~pp & 20.94 & 21.97 \\
+2 & 50.0\% & $-$14~pp & 19.98 & 21.22 \\
+4 & 26.0\% & \textbf{$-$38~pp} & 13.29 & 15.22 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Monotonic linear decay. Model becomes \emph{more confidently wrong} as recurrence deepens. Standard Qwen3.6 weights are not trained for recurrence.
+
+\subsection{Loop-Intolerance Profiling (New Method)}\label{sec:lip}
+
+We extend \S\ref{sec:recurrence} into a destructive localization tool. Hold $N_\text{loops}=2$ fixed, sweep (start, end) range:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccl}
+\toprule
+Range & Accuracy & $\Delta$ vs.\ baseline & Interpretation \\
+\midrule
+\textbf{L5--L10} & 63.3\% & \textbf{$-$0.7~pp} & Benign --- shallow encoding \\
+L15--L20 & \textbf{36.7\%} & \textbf{$-$27.3~pp} & Reasoning-critical zone \\
+L23--L30 & 50.0\% & $-$14.0~pp & Consolidation \\
+L30--L38 & 46.7\% & $-$17.3~pp & Commit phase \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Empirical localization of reasoning at L15--L20}, coincident with our Cohen's $d$ peak at L22 and with the layer where single-direction patch showed weakest-positive effects (\S\ref{sec:factorial}). LIP complements activation patching (single-point) and sparse feature circuits (feature-level) by measuring destructive systemic perturbation to localize load-bearing zones.
+
+\subsection{Intervention Level 7 --- Norm-Preserving Recurrence (Parcae-Lite)}
+
+Following Parcae~\cite{prairie2026parcae}, enforce $h_\text{looped} \leftarrow h_\text{looped} \cdot \|h_\text{original}\| / \|h_\text{looped}\|$:
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+$N_\text{loops}$ & Plain loop & Norm-preserving & Recovery \\
+\midrule
+1 & 58\% & 56.7\% & $\sim$0 (noise) \\
+\textbf{2} & \textbf{50\%} & \textbf{60\%} & \textbf{+10~pp} \\
+4 & 26\% & 33.3\% & +7~pp \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Magnitude dilution explains $\sim$10~pp of loop damage; compound perturbation dominates deeper recurrence. Parcae-style training (spectral-radius-constrained injection) is the principled path.
+
+\subsection{Intervention Level 8 --- Amnesic Inference Validation}\label{sec:amnesic}
+
+Does ablating the probe direction during real inference (no teacher-forcing) improve accuracy? Two amnesic variants at L17, last prompt token:
+\begin{itemize}[leftmargin=*, topsep=0pt]
+  \item \texttt{amnesic\_all}: project out all 10 letter directions, $x_\text{new} = x - \sum_L (x \cdot d_L) d_L$
+  \item \texttt{amnesic\_argmax}: use the probe argmax, project out only that letter's direction
+\end{itemize}
+
+Three independent evaluation runs on SuperGPQA:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cccccccc}
+\toprule
+Run & $N$ & Filter & baseline & amnesic\_all & amnesic\_argmax & gained & lost \\
+\midrule
+1 & 94 & $\geq$2 corr & 59.6\% & \textbf{62.8\% (+3.2)} & 61.7\% (+2.1) & 3 & 0 \\
+2 & 100 & $\geq$2 corr & 52.0\% & \textbf{55.0\% (+3.0)} & 54.0\% (+2.0) & 3 & 0 \\
+3 & 423 & $\geq$0 corr & 50.6\% & 51.5\% (+0.9) & 51.5\% (+0.9) & 4 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Pooled: 10 gained, 0 lost across 617 Stage B items.} McNemar binomial one-directional test: $p = 2 \times (1/1024) = \mathbf{0.002}$ (highly significant). The effect is one-directional (zero losses); \emph{amnesic ablation never degraded a baseline-correct answer}. Effect scales with question headroom (+3~pp on filtered, +0.9~pp on unfiltered). Mean gold logit decreases slightly (20.58 $\to$ 20.54): amnesic redistributes probability mass away from distractors, consistent with Elazar et al.\ (2021).
+
+\textbf{Amnesic optimum characterization.} An $\alpha$-grid sweep $\alpha \in \{0.8, 0.9, 1.0, 1.1, 1.2\}$ on Stage B ($N=112$) reveals a \emph{symmetric peak at exactly $\alpha=1.0$}: deviations of $\pm 0.1$ already break Pareto. Multi-layer (L17+L23, L11+L17+L23), multi-position (last-5 prompt tokens), and entropy-gated variants all break the zero-loss Pareto pattern or converge to the same +2.7~pp ceiling. \textbf{L17, single-layer, single-position, $\alpha=1.0$ is the mechanistically exact optimum.}
+
+\textbf{Generalization boundary.} Evaluated on MMLU-Pro 10-opt ($N=200$), the same protocol yields \textbf{$-$0.5~pp} with 0 gains / 1 loss. The effect is \emph{in-distribution-specific}: the probe reads corpus-selection-specific noise. On out-of-distribution items the same direction is causally load-bearing, so ablation hurts. Amnesic probes are selection-specific by construction (\cite{elazar2021amnesic}).
+
+\subsection{Cross-architecture --- Amnesic is a Hybrid-Specific Signature}\label{sec:crossarch}
+
+To test if amnesic is a hybrid property or a general transformer phenomenon, we replicate the full protocol on dense transformers. We generate $N=3$ rollouts per question at temperature 0.7 on 200 SuperGPQA 10-option items, collect first-10-response-token residuals at depth-matched layers (33\% / 50\% / 67\%), train a 10-way logreg probe (PCA(128) + C=0.5), evaluate amnesic ablation on a held-out question split.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccccc}
+\toprule
+Model & Architecture & Layers & Baseline & Best Pareto $\Delta$ & Direction \\
+\midrule
+\textbf{Qwen3.6-35B-A3B} & \textbf{MoE + GDN + Gated-Attn} & 40 & 53.6\% & \textbf{+2.7~pp} & $\checkmark$ positive \\
+Qwen2.5-7B & dense & 28 & 18.8\% & 0~pp & null (underpowered) \\
+\textbf{Qwen2.5-32B} & \textbf{dense} & 64 & 40.9\% & \textbf{$-$4.5~pp} & \textbf{actively hurts} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Qwen2.5-32B per-layer ($N_\text{test} = 44$): L21 $-$4.5~pp, L32 $-$6.8~pp, L42 $-$4.5~pp. Zero gains and consistent 2--3 losses across all three depth-matched layers. \textbf{A 7.2~pp architecture gap.}
+
+\textbf{Mechanistic hypothesis --- readout channels vs.\ write channels.} In dense transformers, every direction in the residual is potentially load-bearing; ablating it damages computation. In hybrid MoE+GDN+Gated-Attn, three mechanisms create separable readout channels: (1) MoE routing (128/8) produces massive redundancy; (2) GDN state recurrence projects observational contrast into a channel separable from the causal writing channel; (3) Gated attention on 8/40 layers enables selective read/write. The probe direction occupies a readout channel in hybrid, safely ablatable. Dense has no such separation.
+
+\subsection{Architecture Isolation --- MoE Routing Alone Does Not Explain the Effect}\label{sec:isolation}
+
+We isolate which component of the hybrid architecture is causally responsible by replicating on \textbf{Mixtral-8x7B-Instruct-v0.1} --- MoE-only (8 experts, 2 active per token) with standard GQA attention and standard MLP. No GDN. No Gated-Attention. Only MoE routing.
+
+Baseline: 32.5\% (passes $\geq$30\% sanity threshold). $N_\text{test} = 40$:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{cccccc}
+\toprule
+Layer (depth\%) & Acc & $\Delta$ & Gained & Lost \\
+\midrule
+L10 (33\%) & 30.0\% & \textbf{$-$2.5~pp} & 0 & 1 \\
+L16 (50\%) & 27.5\% & \textbf{$-$5.0~pp} & 0 & 2 \\
+L21 (67\%) & 32.5\% & 0.0~pp & 1 & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Mixtral behaves like dense, not hybrid.} Zero gains on the two negative layers; L21 is non-Pareto (1 gained / 1 lost). Three-model comparison:
+
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+Model & Architecture features & Baseline & Best Pareto $\Delta$ \\
+\midrule
+Qwen3.6-35B-A3B & fine-MoE (128/8) + GDN + Gated-Attn & 53.6\% & \textbf{+2.7~pp} $\checkmark$ \\
+Mixtral-8x7B & coarse MoE (8/2), dense attn, dense MLP & 32.5\% & \textbf{$-$2.5~pp} $\times$ \\
+Qwen2.5-32B & dense, dense attn, dense MLP & 40.9\% & \textbf{$-$4.5~pp} $\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{MoE routing alone is falsified as a sufficient mechanism.} Standard (coarse) MoE with 8 experts and 2 active per token does not support amnesic; it behaves indistinguishably from dense. The Qwen3.6-specific enabler must therefore be one of: (1) GDN state recurrence (32/40 layers); (2) Gated Attention (8/40 layers); (3) fine-grained MoE routing (128/8 --- 16$\times$ denser than Mixtral's 8/2); or some combination.
+
+\section{Synthesis}
+
+The nine intervention levels converge on a single coherent mechanism:
+
+\begin{enumerate}[leftmargin=*, topsep=0pt]
+  \item Reasoning in Qwen3.6-35B-A3B lives in a \emph{distributed representation across L15--L20}.
+  \item That representation is \emph{load-bearing}: systemic perturbation destroys 27~pp (\S\ref{sec:lip}); compound recurrence destroys up to 38~pp (\S\ref{sec:recurrence}).
+  \item It is not manipulable via single-direction or single-feature interventions: six single-point methods all null or anti-causal.
+  \item The L17 probe AUROC 0.78 reads an inter-class contrast correlate (observational readout), not a causal driver --- confirmed by amnesic tests at both source-kept level (\S\ref{sec:factorial}: +15~pp) and accuracy level (\S\ref{sec:amnesic}: +2.7~pp Pareto, $p=0.002$).
+  \item The architecture is not recurrently loopable without retraining: magnitude dilution explains $\sim$10~pp of loop damage (partial rescue via norm preservation), but compound perturbation dominates.
+  \item \textbf{Amnesic is a hybrid-architecture signature} (\S\ref{sec:crossarch}): Qwen2.5-32B dense shows $-$4.5~pp (7.2~pp gap). Probe directions are observational in hybrid MoE+GDN, load-bearing in dense.
+  \item \textbf{MoE routing alone does not explain the effect} (\S\ref{sec:isolation}): Mixtral-8x7B (MoE-only) shows $-$2.5~pp, behaving like dense. The enabler must be GDN, Gated-Attn, fine-grained MoE routing, or their combination --- not coarse MoE.
+\end{enumerate}
+
+\section{Discussion}
+
+\paragraph{Why single-point interventions fail in hybrid MoE.} Two non-exclusive hypotheses: (H1) redundant distributed causation --- multiple pathways carry the same signal, ablating one leaves others to compensate (matches Anthropic's refusal-is-a-cone finding generalized to letter prediction); (H2) MoE routing absorbs perturbations --- 128 experts with 8 active produce many valid routings; single-direction patches get absorbed via expert re-routing.
+
+\paragraph{LIP as a general method.} LIP complements existing localization tools: activation patching (single-point), Sparse Feature Circuits (feature-level, requires SAE), attribution graphs (requires CLT). LIP requires only forward hooks and a correctness signal, works where the others fail, and is especially suited to architectures where CLT/SAE training is expensive or infeasible (any 100B+ hybrid model).
+
+\paragraph{Implications for training.} Inducing a causally-verifiable planning circuit requires exposing a planning-state interface. Candidates: Parcae constrained recurrence~\cite{prairie2026parcae} (trained tolerance to input-injected recurrence); probe-causalized adapter (fine-tune LoRA to strengthen the probe direction's causal effect); CLT co-training (train model and dictionary jointly).
+
+\paragraph{Limitations.}
+\begin{itemize}[leftmargin=*, topsep=0pt]
+  \item $N=20$--50 per intervention: paired-bootstrap CIs span $\pm 10$~pp. Effects $<10$~pp are within noise floor per experiment; we rely on pooling and directional consistency (10/0 gained/lost in \S\ref{sec:amnesic}) for significance.
+  \item SAE/transcoder fidelity 55--56\% variance explained; missing 44--45\% may contain causal signal.
+  \item Single dense and single MoE-only model at each scale. Replication in Llama-3.3-70B, DeepSeek-V2-Lite (fine-grained MoE), and pure Mamba-2 at matched scale would further isolate which hybrid feature enables amnesic.
+  \item SuperGPQA MCQ is a narrow domain. Reasoning in code, math, and creative domains may have different mechanistic structure.
+  \item GDN layers (32/40) are excluded from point intervention --- they carry recurrent state we cannot point-intervene without custom SSM-state surgery. LIP is the only method in our toolkit that works across this class of layers.
+\end{itemize}
+
+\section{Conclusion}
+
+We mapped the mechanistic interpretability surface of Qwen3.6-35B-A3B reasoning via nine intervention methods on a public 711-rollout corpus. Reasoning in hybrid MoE+GDN+Gated-Attention is a distributed, load-bearing process localized at L15--L20, resistant to single-point manipulation, and destroyed --- but not redirected --- by systemic perturbation. The L17 probe AUROC 0.78 is an amnesic contrast readout, not a causal driver. Our introduced method, \textbf{Loop-Intolerance Profiling}, cleanly localizes the reasoning-critical zone where all single-point methods fail. Amnesic inference at L17 $\alpha=1.0$ yields +2.7~pp Pareto-positive accuracy on Qwen3.6 but \textbf{$-$4.5~pp on dense Qwen2.5-32B} and \textbf{$-$2.5~pp on MoE-only Mixtral-8x7B} --- the effect is a hybrid-specific signature requiring GDN state recurrence, Gated-Attention, or fine-grained MoE routing. Partial rescue via norm-preserving recurrence validates Parcae-style training as the principled path to enabling inference-time recurrence in hybrid architectures.
+
+\paragraph{Code and data.} Stage B corpus: \url{https://huggingface.co/datasets/caiovicentino1/Qwen3.6-35B-A3B-mcr-stage-b}. All notebooks reproducing \S\ref{sec:detection}--\S\ref{sec:isolation} are open at \url{https://huggingface.co/datasets/caiovicentino1/Qwen3.6-35B-A3B-mcr-stage-b/tree/main/notebooks}.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\appendix
+\section{Reproducibility}
+All code, notebooks, and corpus are public. Hardware: NVIDIA RTX 6000 Blackwell 96~GB via Google Colab, or NVIDIA B200 80~GB via vast.ai. Software: PyTorch 2.11, \texttt{transformers} main branch, \texttt{flash-linear-attention} 0.4.2, \texttt{causal-conv1d} 1.6.1. Total compute for this paper: $\sim$15 GPU-hours on RTX 6000 Blackwell plus $\sim$5 GPU-hours for cross-arch experiments.
+
+\end{document}

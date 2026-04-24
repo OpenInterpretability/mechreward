@@ -245,7 +245,7 @@ If you use `mechreward` in research, please cite:
   author = {Vicentino, Caio},
   title = {mechreward: Mechanistic interpretability as reward signal for RL},
   year = {2026},
-  url = {https://github.com/caiovicentino/mechreward}
+  url = {https://github.com/OpenInterpretability/mechreward}
 }
 ```
 

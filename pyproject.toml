@@ -63,9 +63,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/caiovicentino/mechreward"
-Repository = "https://github.com/caiovicentino/mechreward"
-Issues = "https://github.com/caiovicentino/mechreward/issues"
+Homepage = "https://github.com/OpenInterpretability/mechreward"
+Repository = "https://github.com/OpenInterpretability/mechreward"
+Issues = "https://github.com/OpenInterpretability/mechreward/issues"
 
 [project.scripts]
 mechreward = "mechreward.cli:main"

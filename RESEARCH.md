@@ -173,7 +173,7 @@ The most likely failure modes, roughly in order of probability:
   author = {Vicentino, Caio},
   title = {mechreward: A library for using SAE features as RL reward signals},
   year = {2026},
-  url = {https://github.com/caiovicentino/mechreward}
+  url = {https://github.com/OpenInterpretability/mechreward}
 }
 ```
 

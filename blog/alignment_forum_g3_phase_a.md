@@ -6,7 +6,7 @@
 
 Trained adapter: [`caiovicentino1/Qwen3.5-4B-mechreward-G3-phaseA-step400`](https://huggingface.co/caiovicentino1/Qwen3.5-4B-mechreward-G3-phaseA-step400)
 SAE: [`caiovicentino1/Qwen3.5-4B-SAE-L18-topk`](https://huggingface.co/caiovicentino1/Qwen3.5-4B-SAE-L18-topk)
-Library: [`caiovicentino/mechreward`](https://github.com/caiovicentino/mechreward)
+Library: [`OpenInterpretability/mechreward`](https://github.com/OpenInterpretability/mechreward)
 
 ---
 
@@ -16,7 +16,7 @@ Most SAE + reasoning work to date shows that features are *readable* — you can
 
 The natural next move is: rather than steering at inference, use the same features as a **reward signal during RL training**, letting the model learn *when* to fire them. This is what [SARM](https://arxiv.org/abs/2508.08746) did offline (linear head on SAE features trained on preference data, then used as frozen reward model in RLHF). We pushed further: use SAE-feature activations as a **per-token dense reward inside online GRPO**, computed from the hidden state at every response token while the policy is updating.
 
-The mechreward framework lives [here](https://github.com/caiovicentino/mechreward). Below is the three-stage empirical pipeline we used to validate the approach, with particular attention to the engineering lessons that would have saved us about five wall-clock hours.
+The mechreward framework lives [here](https://github.com/OpenInterpretability/mechreward). Below is the three-stage empirical pipeline we used to validate the approach, with particular attention to the engineering lessons that would have saved us about five wall-clock hours.
 
 ## Stage Gate 1 — does the signal predict correctness at all?
 
@@ -59,7 +59,7 @@ The key design change at G3: **per-token** mech-reward, not just trajectory-leve
 
 Config: GRPO, 2000 planned steps on 7 500 GSM8K questions, 4 questions × 4 rollouts per step, raw prompt `Q: {q}\nA: Let's think step by step.` (chat template breaks the SAE feature calibration — lesson below), max_gen_len=256, λ=0.1, KL β=0.05, seed=42, LoRA r=32 on language-model projections only (vision tower frozen).
 
-![Training trajectory](https://raw.githubusercontent.com/caiovicentino/mechreward/main/figures/g3_training_trajectory.png)
+![Training trajectory](https://raw.githubusercontent.com/OpenInterpretability/mechreward/main/figures/g3_training_trajectory.png)
 
 ### The LR-vs-clipping diagnostic lesson
 
@@ -77,7 +77,7 @@ The bottleneck was LR. Raising to 3e-6 at step 232 produced immediate learning:
 
 ### Eval at step 400 (vs baseline with LoRA disabled via `model.disable_adapter()`)
 
-![GSM8K comparison](https://raw.githubusercontent.com/caiovicentino/mechreward/main/figures/g3_gsm8k_comparison.png)
+![GSM8K comparison](https://raw.githubusercontent.com/OpenInterpretability/mechreward/main/figures/g3_gsm8k_comparison.png)
 
 | Metric | Baseline | G3 Phase A | Δ |
 |---|---|---|---|
@@ -87,7 +87,7 @@ The bottleneck was LR. Raising to 3e-6 at step 232 produced immediate learning:
 | Adversarial canary hack rate (n=50) | 4.0 % | 8.0 % | +4 pp (within 95 % CI) |
 | Correct under adversarial canary (n=50) | 18.0 % | 28.0 % | **+10 pp** |
 
-![Canary breakdown](https://raw.githubusercontent.com/caiovicentino/mechreward/main/figures/g3_canary_breakdown.png)
+![Canary breakdown](https://raw.githubusercontent.com/OpenInterpretability/mechreward/main/figures/g3_canary_breakdown.png)
 
 ### Effective training budget — the honest framing
 
@@ -111,7 +111,7 @@ A few things that consumed engineer-hours and might not be obvious:
 4. **Memory-efficient KL without a ref model.** `model.disable_adapter()` as a context manager gives the base-policy logprobs without a separate 8 GB copy. `bf16 log_softmax` (not `float32`) halves logits memory — critical for vocab=248 k on a 4 B model. Grad checkpointing ON during the train forward, OFF during the rollout `generate` (use_cache needs to be on for fast generation).
 5. **fla + causal-conv1d are not optional on GDN models.** Without them the hybrid linear-attention layers fall back to torch implementation at ~10× slower. With them: ~30 tok/s on RTX 6000 Blackwell. Without: ~3 tok/s.
 
-All of the above is documented with exact pinned commit SHAs in the [install recipe](https://github.com/caiovicentino/mechreward/blob/main/README.md).
+All of the above is documented with exact pinned commit SHAs in the [install recipe](https://github.com/OpenInterpretability/mechreward/blob/main/README.md).
 
 ## Context vs prior work
 
@@ -137,8 +137,8 @@ Comments especially welcome on:
 ---
 
 **Artifacts** (everything public, Apache-2.0):
-- [mechreward library (code)](https://github.com/caiovicentino/mechreward)
+- [mechreward library (code)](https://github.com/OpenInterpretability/mechreward)
 - [SAE on Qwen3.5-4B L18](https://huggingface.co/caiovicentino1/Qwen3.5-4B-SAE-L18-topk)
 - [Companion SAE on Gemma 4 E4B L21](https://huggingface.co/caiovicentino1/Gemma-4-E4B-SAE-L21-topk)
 - [Trained LoRA adapter (this result)](https://huggingface.co/caiovicentino1/Qwen3.5-4B-mechreward-G3-phaseA-step400)
-- [Raw training history + figures](https://github.com/caiovicentino/mechreward/tree/main/figures)
+- [Raw training history + figures](https://github.com/OpenInterpretability/mechreward/tree/main/figures)

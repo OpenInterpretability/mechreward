@@ -23,7 +23,7 @@ Out of scope for this repo (but welcome as separate projects):
 ## Development setup
 
 ```bash
-git clone https://github.com/caiovicentino/mechreward
+git clone https://github.com/OpenInterpretability/mechreward
 cd mechreward
 python -m venv .venv
 source .venv/bin/activate
