@@ -1,5 +1,5 @@
 ---
-license: mit
+license: apache-2.0
 task_categories:
   - question-answering
   - text-generation
@@ -590,4 +590,4 @@ Built on top of:
 - [OpenMythos by kyegomez (2026)](https://github.com/kyegomez/OpenMythos) — Recurrent-Depth Transformer reconstruction inspiration
 - [arXiv:2510.07364 "Base Models Know How to Reason"](https://arxiv.org/abs/2510.07364) — closest prior art on SAE-feature causal control, on dense Qwen2.5-32B
 
-License: MIT.
+License: Apache-2.0.
